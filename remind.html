@@ -326,9 +326,12 @@
                 return offsetDate.toISOString().slice(0, 16);
             }
 
-            function startOfToday() {
+            function getTodayBounds() {
                 const now = new Date();
-                return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                return {
+                    start: new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(),
+                    end: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime()
+                };
             }
 
             function setDates() {
@@ -372,8 +375,7 @@
             }
 
             function visibleTasks() {
-                const todayStart = startOfToday();
-                const tomorrowStart = todayStart + 86400000;
+                const { end: tomorrowStart } = getTodayBounds();
                 let shown;
                 if (activeFilter === "completed") shown = tasks.filter(task => task.done);
                 else if (activeFilter === "upcoming") shown = tasks.filter(task => !task.done);
@@ -394,8 +396,12 @@
             function render() {
                 const activeTasks = tasks.filter(task => !task.done);
                 updateOpeningNotice(activeTasks.length);
-                const dueToday = activeTasks.filter(task => new Date(task.dueAt).getTime() < startOfToday() + 86400000).length;
-                const upcoming = activeTasks.filter(task => new Date(task.dueAt).getTime() >= startOfToday() + 86400000).length;
+                const { start: todayStart, end: tomorrowStart } = getTodayBounds();
+                const dueToday = activeTasks.filter(task => {
+                    const dueTime = new Date(task.dueAt).getTime();
+                    return dueTime >= todayStart && dueTime < tomorrowStart;
+                }).length;
+                const upcoming = activeTasks.filter(task => new Date(task.dueAt).getTime() >= tomorrowStart).length;
                 const completed = tasks.filter(task => task.done).length;
                 document.getElementById("todayStat").textContent = dueToday;
                 document.getElementById("upcomingStat").textContent = upcoming;
