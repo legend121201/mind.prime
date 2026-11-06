@@ -99,8 +99,6 @@
         .section-heading { display: flex; align-items: center; justify-content: space-between; margin: 0 0 13px; }
         .section-heading h2 { font-size: 16px; }
         .task-total { color: var(--muted); font-size: 11px; }
-        .history-section { margin-top: 30px; }
-        .history-list { display: grid; gap: 8px; }
         .history-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
         .history-title { min-width: 0; margin: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
         .history-date { flex: 0 0 auto; color: var(--muted); font-size: 11px; }
@@ -142,10 +140,12 @@
         .delete-button { border: 0; background: transparent; color: #9aa39d; border-radius: 5px; padding: 6px 8px; font-size: 17px; line-height: 1; }
         .task.done .delete-button { color: #80553d; font-size: 11px; font-weight: 650; }
         .delete-button:hover { background: #fbefeb; color: #b45231; }
-        .delete-confirmation { margin: 8px 0 0; color: #80553d; font-size: 11px; font-weight: 600; }
-        .delete-confirm-actions { display: flex; align-items: center; gap: 5px; }
-        .delete-confirm-actions button { border: 1px solid var(--line); border-radius: 5px; background: white; color: #59645d; padding: 6px 8px; font-size: 10px; font-weight: 650; }
-        .delete-confirm-actions .confirm-delete { border-color: #b45231; background: #b45231; color: white; }
+        .delete-dialog { width: min(420px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: 10px; padding: 24px; color: var(--ink); box-shadow: var(--shadow); }
+        .delete-dialog::backdrop { background: rgba(32, 42, 39, .42); }
+        .delete-dialog p { margin: 0 0 20px; font-size: 15px; font-weight: 650; }
+        .delete-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        .delete-dialog-actions button { border: 1px solid var(--line); border-radius: 6px; background: white; color: #59645d; padding: 9px 13px; font-size: 12px; font-weight: 650; }
+        .delete-dialog-actions .confirm-delete { border-color: #b45231; background: #b45231; color: white; }
         .empty-state { background: rgba(255,255,255,.55); border: 1px dashed #d7ddd5; border-radius: 8px; padding: 34px 20px; text-align: center; color: var(--muted); }
         .empty-mark { width: 43px; height: 43px; margin: 0 auto 12px; display: grid; place-items: center; border-radius: 14px; background: var(--green-soft); color: var(--green); font-size: 19px; }
         .empty-state strong { display: block; color: var(--ink); font-size: 13px; margin-bottom: 5px; }
@@ -213,7 +213,7 @@
                 <button class="nav-item active" type="button" data-filter="today"><span class="nav-icon" aria-hidden="true">◷</span> Today <span class="nav-count" id="todayCount">0</span></button>
                 <button class="nav-item" type="button" data-filter="upcoming"><span class="nav-icon" aria-hidden="true">▤</span> All reminders <span class="nav-count" id="allCount">0</span></button>
                 <button class="nav-item" type="button" data-filter="completed"><span class="nav-icon" aria-hidden="true">✓</span> Completed <span class="nav-count" id="completedCount">0</span></button>
-                <button class="nav-item" type="button" data-filter="history"><span class="nav-icon" aria-hidden="true">◴</span> History <span class="nav-count" id="historyCount">0</span></button>
+                <button class="nav-item" type="button" data-filter="history"><span class="nav-icon" aria-hidden="true">◴</span> History</button>
             </nav>
             <div class="sidebar-note"><strong>A little more on top of it.</strong>Your reminders stay saved in this browser, ready when you are.</div>
         </aside>
@@ -269,10 +269,6 @@
                         <div class="task-list" id="taskList" aria-live="polite"></div>
                     </section>
                 </div>
-                <section class="history-section" aria-labelledby="historyTitle">
-                    <div class="section-heading"><h2 id="historyTitle">Task history</h2><span class="task-total" id="homeHistoryCount">0 tasks</span></div>
-                    <div class="history-list" id="homeHistoryList" aria-live="polite"></div>
-                </section>
             </div>
 
             <div class="content" id="listPage" hidden>
@@ -290,6 +286,13 @@
             </div>
         </main>
     </div>
+    <dialog class="delete-dialog" id="deleteDialog" aria-labelledby="deleteDialogMessage">
+        <p id="deleteDialogMessage">Do you really want to delete this task?</p>
+        <div class="delete-dialog-actions">
+            <button class="confirm-delete" id="confirmDelete" type="button">Confirm</button>
+            <button id="cancelDelete" type="button">Cancel</button>
+        </div>
+    </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script>
@@ -308,6 +311,7 @@
             const reminderSearch = document.getElementById("reminderSearch");
             const openingNotice = document.getElementById("openingNotice");
             const openingNoticeText = document.getElementById("openingNoticeText");
+            const deleteDialog = document.getElementById("deleteDialog");
             let activeFilter = filterFromHash();
             let searchQuery = "";
             let pendingDeleteId = null;
@@ -414,48 +418,9 @@
                 openingNotice.hidden = false;
             }
 
-            function renderHomeHistory() {
-                const historyList = document.getElementById("homeHistoryList");
-                const historyTasks = [...tasks].sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0));
-                document.getElementById("homeHistoryCount").textContent = `${historyTasks.length} ${historyTasks.length === 1 ? "task" : "tasks"}`;
-                historyList.replaceChildren();
-
-                if (!historyTasks.length) {
-                    const empty = document.createElement("div");
-                    empty.className = "empty-state";
-                    const message = document.createElement("strong");
-                    message.textContent = "No task history yet";
-                    const detail = document.createElement("span");
-                    detail.textContent = "Tasks you create will appear here with their creation date.";
-                    empty.append(message, detail);
-                    historyList.append(empty);
-                    return;
-                }
-
-                historyTasks.forEach(task => {
-                    const item = document.createElement("article");
-                    item.className = "history-item";
-                    const title = document.createElement("p");
-                    title.className = "history-title";
-                    title.textContent = task.title;
-                    const date = document.createElement("time");
-                    date.className = "history-date";
-                    const createdAt = task.createdAt ? new Date(task.createdAt) : null;
-                    if (createdAt && !Number.isNaN(createdAt.getTime())) {
-                        date.dateTime = createdAt.toISOString();
-                        date.textContent = `Created ${createdAt.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
-                    } else {
-                        date.textContent = "Creation date unavailable";
-                    }
-                    item.append(title, date);
-                    historyList.append(item);
-                });
-            }
-
             function render() {
                 const activeTasks = tasks.filter(task => !task.done);
                 updateOpeningNotice(activeTasks.length);
-                renderHomeHistory();
                 const { start: todayStart, end: tomorrowStart } = getTodayBounds();
                 const dueToday = activeTasks.filter(task => {
                     const dueTime = new Date(task.dueAt).getTime();
@@ -469,8 +434,6 @@
                 document.getElementById("todayCount").textContent = dueToday;
                 document.getElementById("allCount").textContent = activeTasks.length;
                 document.getElementById("completedCount").textContent = completed;
-                document.getElementById("historyCount").textContent = tasks.length;
-
                 const shown = visibleTasks().sort((a, b) => activeFilter === "history"
                     ? (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)
                     : new Date(a.dueAt) - new Date(b.dueAt));
@@ -553,36 +516,6 @@
                     due.textContent = dueLabel(task.dueAt);
                     const actions = document.createElement("div");
                     actions.className = "task-actions";
-                    if (pendingDeleteId === task.id) {
-                        const confirmation = document.createElement("p");
-                        confirmation.className = "delete-confirmation";
-                        confirmation.textContent = "Do you really want to delete this task?";
-                        main.append(confirmation);
-
-                        const confirmActions = document.createElement("div");
-                        confirmActions.className = "delete-confirm-actions";
-                        const confirm = document.createElement("button");
-                        confirm.className = "confirm-delete";
-                        confirm.type = "button";
-                        confirm.textContent = "Confirm";
-                        confirm.addEventListener("click", () => {
-                            tasks = tasks.filter(item => item.id !== task.id);
-                            pendingDeleteId = null;
-                            saveTasks();
-                            render();
-                        });
-                        const cancel = document.createElement("button");
-                        cancel.type = "button";
-                        cancel.textContent = "Cancel";
-                        cancel.addEventListener("click", () => {
-                            pendingDeleteId = null;
-                            render();
-                        });
-                        confirmActions.append(confirm, cancel);
-                        row.append(check, main, due, confirmActions);
-                        taskList.append(row);
-                        return;
-                    }
                     if (!task.done && activeFilter !== "history") {
                         const snooze = document.createElement("select");
                         snooze.className = "snooze-select";
@@ -638,13 +571,30 @@
                     remove.setAttribute("aria-label", `Delete ${task.title}`);
                     remove.addEventListener("click", () => {
                         pendingDeleteId = task.id;
-                        render();
+                        deleteDialog.showModal();
                     });
                     actions.append(remove);
                     row.append(check, main, due, actions);
                     taskList.append(row);
                 });
             }
+
+            document.getElementById("confirmDelete").addEventListener("click", () => {
+                tasks = tasks.filter(task => task.id !== pendingDeleteId);
+                pendingDeleteId = null;
+                saveTasks();
+                deleteDialog.close();
+                render();
+            });
+
+            document.getElementById("cancelDelete").addEventListener("click", () => {
+                pendingDeleteId = null;
+                deleteDialog.close();
+            });
+
+            deleteDialog.addEventListener("close", () => {
+                pendingDeleteId = null;
+            });
 
             form.addEventListener("submit", event => {
                 event.preventDefault();
