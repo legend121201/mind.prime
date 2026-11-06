@@ -117,6 +117,7 @@
         .task-main { min-width: 0; }
         .task-title { margin: 0; font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
         .task-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; color: var(--muted); font-size: 10px; }
+        .created-at { color: var(--muted); }
         .category { border-radius: 4px; padding: 3px 6px; font-weight: 650; }
         .category-personal { color: var(--green-dark); background: var(--green-soft); }
         .category-school { color: #335c8a; background: var(--blue-soft); }
@@ -203,6 +204,7 @@
                 <button class="nav-item active" type="button" data-filter="today"><span class="nav-icon" aria-hidden="true">◷</span> Today <span class="nav-count" id="todayCount">0</span></button>
                 <button class="nav-item" type="button" data-filter="upcoming"><span class="nav-icon" aria-hidden="true">▤</span> All reminders <span class="nav-count" id="allCount">0</span></button>
                 <button class="nav-item" type="button" data-filter="completed"><span class="nav-icon" aria-hidden="true">✓</span> Completed <span class="nav-count" id="completedCount">0</span></button>
+                <button class="nav-item" type="button" data-filter="history"><span class="nav-icon" aria-hidden="true">◴</span> History <span class="nav-count" id="historyCount">0</span></button>
             </nav>
             <div class="sidebar-note"><strong>A little more on top of it.</strong>Your reminders stay saved in this browser, ready when you are.</div>
         </aside>
@@ -356,6 +358,7 @@
             function filterFromHash() {
                 if (location.hash === "#all-reminders") return "upcoming";
                 if (location.hash === "#completed") return "completed";
+                if (location.hash === "#history") return "history";
                 return "today";
             }
 
@@ -371,16 +374,17 @@
                     if (selected) button.setAttribute("aria-current", "page");
                     else button.removeAttribute("aria-current");
                 });
-                document.getElementById("listPageTitle").textContent = activeFilter === "completed" ? "Completed" : "All reminders";
-                document.getElementById("listPageDescription").textContent = activeFilter === "completed" ? "Your finished tasks, all in one place." : "Find a task by its name or subject.";
-                document.getElementById("listTitle").textContent = isToday ? "Today" : activeFilter === "completed" ? "Completed reminders" : "Your reminders";
-                reminderSearch.placeholder = activeFilter === "completed" ? "Search completed reminders" : "Search reminders";
+                document.getElementById("listPageTitle").textContent = activeFilter === "history" ? "History" : activeFilter === "completed" ? "Completed" : "All reminders";
+                document.getElementById("listPageDescription").textContent = activeFilter === "history" ? "See when each task was created." : activeFilter === "completed" ? "Your finished tasks, all in one place." : "Find a task by its name or subject.";
+                document.getElementById("listTitle").textContent = isToday ? "Today" : activeFilter === "history" ? "Task history" : activeFilter === "completed" ? "Completed reminders" : "Your reminders";
+                reminderSearch.placeholder = activeFilter === "history" ? "Search task history" : activeFilter === "completed" ? "Search completed reminders" : "Search reminders";
             }
 
             function visibleTasks() {
                 const { end: tomorrowStart } = getTodayBounds();
                 let shown;
-                if (activeFilter === "completed") shown = tasks.filter(task => task.done);
+                if (activeFilter === "history") shown = [...tasks];
+                else if (activeFilter === "completed") shown = tasks.filter(task => task.done);
                 else if (activeFilter === "upcoming") shown = tasks.filter(task => !task.done);
                 else shown = tasks.filter(task => !task.done && new Date(task.dueAt).getTime() < tomorrowStart);
                 const query = activeFilter === "today" ? "" : searchQuery.trim().toLocaleLowerCase();
@@ -412,10 +416,14 @@
                 document.getElementById("todayCount").textContent = dueToday;
                 document.getElementById("allCount").textContent = activeTasks.length;
                 document.getElementById("completedCount").textContent = completed;
+                document.getElementById("historyCount").textContent = tasks.length;
 
-                const shown = visibleTasks().sort((a, b) => new Date(a.dueAt) - new Date(b.dueAt));
+                const shown = visibleTasks().sort((a, b) => activeFilter === "history"
+                    ? (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)
+                    : new Date(a.dueAt) - new Date(b.dueAt));
                 const hasSearch = activeFilter !== "today" && Boolean(searchQuery.trim());
-                document.getElementById("visibleCount").textContent = `${shown.length} ${shown.length === 1 ? "reminder" : "reminders"}`;
+                const countLabel = activeFilter === "history" ? "task" : "reminder";
+                document.getElementById("visibleCount").textContent = `${shown.length} ${countLabel}${shown.length === 1 ? "" : "s"}`;
                 taskList.replaceChildren();
 
                 if (!shown.length) {
@@ -424,11 +432,11 @@
                     const mark = document.createElement("div");
                     mark.className = "empty-mark";
                     mark.setAttribute("aria-hidden", "true");
-                    mark.textContent = activeFilter === "completed" ? "✓" : "◷";
+                    mark.textContent = activeFilter === "completed" ? "✓" : activeFilter === "history" ? "◴" : "◷";
                     const message = document.createElement("strong");
-                    message.textContent = hasSearch ? "No matching reminders" : activeFilter === "today" ? "Nothing due today" : activeFilter === "upcoming" ? "No reminders yet" : "No finished tasks yet";
+                    message.textContent = hasSearch ? "No matching reminders" : activeFilter === "today" ? "Nothing due today" : activeFilter === "upcoming" ? "No reminders yet" : activeFilter === "history" ? "No task history yet" : "No finished tasks yet";
                     const detail = document.createElement("span");
-                    detail.textContent = hasSearch ? "Try a different task name or subject." : activeFilter === "today" ? "Add a reminder above and give your day a little structure." : activeFilter === "upcoming" ? "Add a reminder above and it’ll show up here." : "Completed reminders will land here.";
+                    detail.textContent = hasSearch ? "Try a different task name or subject." : activeFilter === "today" ? "Add a reminder above and give your day a little structure." : activeFilter === "upcoming" ? "Add a reminder above and it’ll show up here." : activeFilter === "history" ? "New reminders will appear here with their creation date." : "Completed reminders will land here.";
                     empty.append(mark, message, detail);
                     taskList.append(empty);
                     return;
@@ -460,6 +468,15 @@
                     category.className = `category category-${categoryTones[task.category] || "personal"}`;
                     category.textContent = task.category || "Personal";
                     meta.append(category);
+                    if (activeFilter === "history") {
+                        const created = document.createElement("span");
+                        created.className = "created-at";
+                        const createdAt = task.createdAt ? new Date(task.createdAt) : null;
+                        created.textContent = createdAt && !Number.isNaN(createdAt.getTime())
+                            ? `Created ${createdAt.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`
+                            : "Creation date unavailable";
+                        meta.append(created);
+                    }
                     main.append(title, meta);
                     if (!task.done && dueTime <= Date.now()) {
                         const overdueMessage = document.createElement("p");
@@ -544,7 +561,7 @@
                     showToast("Add a task and choose a valid reminder time.");
                     return;
                 }
-                tasks.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, title, dueAt: dueAt.toISOString(), category: categoryInput.value, done: false, notified: false });
+                tasks.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, title, dueAt: dueAt.toISOString(), createdAt: new Date().toISOString(), category: categoryInput.value, done: false, notified: false });
                 saveTasks();
                 form.reset();
                 dueInput.value = localDateTimeValue(new Date());
@@ -555,7 +572,7 @@
 
             filterButtons.forEach(button => button.addEventListener("click", () => {
                 activeFilter = button.dataset.filter;
-                const route = activeFilter === "upcoming" ? "#all-reminders" : activeFilter === "completed" ? "#completed" : "#today";
+                const route = activeFilter === "upcoming" ? "#all-reminders" : activeFilter === "completed" ? "#completed" : activeFilter === "history" ? "#history" : "#today";
                 if (location.hash !== route) history.pushState(null, "", route);
                 syncPage();
                 render();
