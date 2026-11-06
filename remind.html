@@ -117,6 +117,7 @@
         .task-main { min-width: 0; }
         .task-title { margin: 0; font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
         .task-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; color: var(--muted); font-size: 10px; }
+        .task-timer { font-variant-numeric: tabular-nums; white-space: nowrap; }
         .category { border-radius: 4px; padding: 3px 6px; font-weight: 650; }
         .category-personal { color: var(--green-dark); background: var(--green-soft); }
         .category-school { color: #335c8a; background: var(--blue-soft); }
@@ -129,6 +130,8 @@
         .snooze-select:focus { outline: 2px solid rgba(53,119,93,.25); outline-offset: 1px; }
         .restore-snooze { border: 0; border-radius: 5px; background: transparent; color: var(--blue); padding: 6px; font-size: 10px; font-weight: 650; white-space: nowrap; }
         .restore-snooze:hover { background: var(--blue-soft); }
+        .timer-button { border: 0; border-radius: 5px; background: var(--green-soft); color: var(--green-dark); padding: 6px 8px; font-size: 10px; font-weight: 650; white-space: nowrap; }
+        .timer-button:hover { background: #d7e9dd; }
         .task.overdue:not(.done) .due { color: #b45231; font-weight: 650; }
         .task.done .task-title { color: #929b95; text-decoration: line-through; }
         .task.done .due { color: #9ba39d; }
@@ -350,6 +353,28 @@
                 return due.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
             }
 
+            function trackedMilliseconds(task, now = Date.now()) {
+                const elapsed = Number.isFinite(task.elapsedMs) ? Math.max(0, task.elapsedMs) : 0;
+                const startedAt = Number(task.timerStartedAt);
+                return elapsed + (Number.isFinite(startedAt) && startedAt > 0 ? Math.max(0, now - startedAt) : 0);
+            }
+
+            function formatDuration(milliseconds) {
+                const totalSeconds = Math.floor(milliseconds / 1000);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+            }
+
+            function updateTimerDisplays() {
+                const now = Date.now();
+                document.querySelectorAll("[data-task-timer]").forEach(display => {
+                    const task = tasks.find(item => item.id === display.dataset.taskTimer);
+                    if (task) display.textContent = `Time tracked ${formatDuration(trackedMilliseconds(task, now))}`;
+                });
+            }
+
             function filterFromHash() {
                 if (location.hash === "#all-reminders") return "upcoming";
                 if (location.hash === "#completed") return "completed";
@@ -442,6 +467,10 @@
                     check.setAttribute("aria-label", `Mark ${task.title} as ${task.done ? "not completed" : "completed"}`);
                     check.addEventListener("change", () => {
                         task.done = check.checked;
+                        if (task.done && task.timerStartedAt) {
+                            task.elapsedMs = trackedMilliseconds(task);
+                            delete task.timerStartedAt;
+                        }
                         saveTasks();
                         render();
                     });
@@ -457,12 +486,38 @@
                     category.className = `category category-${categoryTones[task.category] || "personal"}`;
                     category.textContent = task.category || "Personal";
                     meta.append(category);
+                    if (activeFilter !== "today") {
+                        const timerDisplay = document.createElement("span");
+                        timerDisplay.className = "task-timer";
+                        timerDisplay.dataset.taskTimer = task.id;
+                        timerDisplay.textContent = `Time tracked ${formatDuration(trackedMilliseconds(task))}`;
+                        meta.append(timerDisplay);
+                    }
                     main.append(title, meta);
                     const due = document.createElement("span");
                     due.className = "due";
                     due.textContent = dueLabel(task.dueAt);
                     const actions = document.createElement("div");
                     actions.className = "task-actions";
+                    if (activeFilter === "upcoming" && !task.done) {
+                        const timerButton = document.createElement("button");
+                        timerButton.className = "timer-button";
+                        timerButton.type = "button";
+                        timerButton.textContent = task.timerStartedAt ? "Pause" : "Start";
+                        timerButton.title = task.timerStartedAt ? "Pause task timer" : "Start task timer";
+                        timerButton.setAttribute("aria-label", `${task.timerStartedAt ? "Pause" : "Start"} timer for ${task.title}`);
+                        timerButton.addEventListener("click", () => {
+                            if (task.timerStartedAt) {
+                                task.elapsedMs = trackedMilliseconds(task);
+                                delete task.timerStartedAt;
+                            } else {
+                                task.timerStartedAt = Date.now();
+                            }
+                            saveTasks();
+                            render();
+                        });
+                        actions.append(timerButton);
+                    }
                     if (!task.done) {
                         const snooze = document.createElement("select");
                         snooze.className = "snooze-select";
@@ -606,6 +661,7 @@
             if ("Notification" in window && Notification.permission === "granted") document.getElementById("notificationLabel").textContent = "Notifications on";
             syncPage();
             render();
+            setInterval(updateTimerDisplays, 1000);
             setInterval(checkDueReminders, 15000);
         })();
     </script>
