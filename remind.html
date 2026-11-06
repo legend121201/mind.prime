@@ -111,12 +111,11 @@
         .search-control input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 12px; }
         .search-control:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px rgba(53,119,93,.11); }
         .task-list { display: grid; gap: 9px; }
-        .task { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 14px 15px; display: grid; grid-template-columns: 21px minmax(0, 1fr) auto auto; align-items: center; gap: 13px; animation: appear .24s ease both; }
+        .task { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 14px 15px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 13px; animation: appear .24s ease both; }
         @keyframes appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .task-check { appearance: none; width: 18px; height: 18px; margin: 0; border: 1.5px solid #c8d0c9; border-radius: 50%; cursor: pointer; position: relative; transition: background .15s, border-color .15s; }
-        .task-check:checked { background: var(--green); border-color: var(--green); }
-        .task-check:checked::after { content: ""; position: absolute; width: 7px; height: 4px; border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(-45deg); left: 4px; top: 5px; }
-        .task-check:focus-visible, button:focus-visible { outline: 3px solid rgba(53,119,93,.28); outline-offset: 2px; }
+        button:focus-visible { outline: 3px solid rgba(53,119,93,.28); outline-offset: 2px; }
+        .finish-task-button { border: 1px solid #c9ded0; border-radius: 6px; background: var(--green-soft); color: var(--green-dark); padding: 7px 9px; font-size: 10px; font-weight: 650; white-space: nowrap; }
+        .finish-task-button:hover { border-color: #b8c8bc; background: #dcebe1; }
         .task-main { min-width: 0; }
         .task-title { margin: 0; font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
         .task-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; color: var(--muted); font-size: 10px; }
@@ -153,6 +152,7 @@
         .toast { position: fixed; right: 24px; bottom: 24px; max-width: min(360px, calc(100vw - 32px)); padding: 13px 16px; color: white; background: #263a31; border-radius: 7px; box-shadow: 0 12px 32px rgba(20,35,27,.2); font-size: 12px; opacity: 0; transform: translateY(10px); pointer-events: none; transition: opacity .2s, transform .2s; z-index: 5; }
         .toast.show { opacity: 1; transform: translateY(0); }
         .mobile-brand { display: none; }
+        .mobile-nav { display: none; }
 
         @media (max-width: 900px) {
             .app-shell { grid-template-columns: 205px minmax(0, 1fr); }
@@ -171,6 +171,9 @@
             .date-kicker { display: none; }
             .notification-button { padding: 8px 9px; font-size: 11px; }
             .avatar { display: none; }
+            .mobile-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 14px; }
+            .mobile-nav .nav-item { justify-content: center; gap: 5px; padding: 9px 5px; font-size: 10px; }
+            .mobile-nav .nav-icon { width: auto; font-size: 13px; }
             .opening-notice { flex-wrap: wrap; gap: 7px; margin-top: 13px; padding: 9px; }
             .opening-notice p { flex: 1 1 calc(100% - 38px); }
             .notice-review { margin-left: 35px; }
@@ -192,7 +195,7 @@
             .field:first-child { grid-column: 1 / -1; }
             .field input, .field select { height: 40px; font-size: 11px; padding: 0 8px; }
             .add-button { grid-column: 1 / -1; }
-            .task { grid-template-columns: 19px minmax(0, 1fr) auto; gap: 10px; padding: 13px 11px; }
+            .task { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; padding: 13px 11px; }
             .task-actions { max-width: 106px; }
             .due { grid-column: 2; grid-row: 2; white-space: normal; }
             .delete-button { grid-column: 3; grid-row: 1 / span 2; }
@@ -227,6 +230,12 @@
                     <span class="avatar" aria-label="Your profile">P</span>
                 </div>
             </header>
+            <nav class="mobile-nav nav-list" aria-label="Reminder views">
+                <button class="nav-item active" type="button" data-filter="today"><span class="nav-icon" aria-hidden="true">◷</span> Today</button>
+                <button class="nav-item" type="button" data-filter="upcoming"><span class="nav-icon" aria-hidden="true">▤</span> All</button>
+                <button class="nav-item" type="button" data-filter="completed"><span class="nav-icon" aria-hidden="true">✓</span> Done</button>
+                <button class="nav-item" type="button" data-filter="history"><span class="nav-icon" aria-hidden="true">◴</span> History</button>
+            </nav>
             <aside class="opening-notice" id="openingNotice" role="status" aria-live="polite" hidden>
                 <span class="notice-icon" aria-hidden="true">!</span>
                 <p id="openingNoticeText"></p>
@@ -312,7 +321,7 @@
             const openingNotice = document.getElementById("openingNotice");
             const openingNoticeText = document.getElementById("openingNoticeText");
             const deleteDialog = document.getElementById("deleteDialog");
-            let activeFilter = filterFromHash();
+            let activeFilter = location.hash === "#history" ? "today" : filterFromHash();
             let searchQuery = "";
             let pendingDeleteId = null;
             let toastTimer;
@@ -482,13 +491,13 @@
                     const row = document.createElement("article");
                     const dueTime = new Date(task.dueAt).getTime();
                     row.className = `task${task.done ? " done" : ""}${!task.done && dueTime < Date.now() ? " overdue" : ""}`;
-                    const check = document.createElement("input");
-                    check.className = "task-check";
-                    check.type = "checkbox";
-                    check.checked = Boolean(task.done);
-                    check.setAttribute("aria-label", `Mark ${task.title} as ${task.done ? "not completed" : "completed"}`);
-                    check.addEventListener("change", () => {
-                        task.done = check.checked;
+                    const completionControl = document.createElement("button");
+                    completionControl.className = "finish-task-button";
+                    completionControl.type = "button";
+                    completionControl.textContent = task.done ? "Mark unfinished" : "Mark as finished";
+                    completionControl.setAttribute("aria-label", `Mark ${task.title} as ${task.done ? "unfinished" : "finished"}`);
+                    completionControl.addEventListener("click", () => {
+                        task.done = !task.done;
                         saveTasks();
                         render();
                     });
@@ -574,7 +583,7 @@
                         deleteDialog.showModal();
                     });
                     actions.append(remove);
-                    row.append(check, main, due, actions);
+                    row.append(completionControl, main, due, actions);
                     taskList.append(row);
                 });
             }
