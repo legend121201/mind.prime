@@ -338,7 +338,9 @@
             function setDates() {
                 const now = new Date();
                 document.getElementById("topDate").textContent = now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
-                document.getElementById("dateChip").textContent = now.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric", year: "numeric" });
+                const date = now.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric", year: "numeric" });
+                const time = now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
+                document.getElementById("dateChip").textContent = `${date} · ${time}`;
             }
 
             function dueLabel(value) {
@@ -609,6 +611,7 @@
             }
 
             setDates();
+            setInterval(setDates, 1000);
             dueInput.value = localDateTimeValue(new Date(Date.now() + 60 * 60 * 1000));
             if ("Notification" in window && Notification.permission === "granted") document.getElementById("notificationLabel").textContent = "Notifications on";
             syncPage();
