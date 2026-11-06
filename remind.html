@@ -99,6 +99,11 @@
         .section-heading { display: flex; align-items: center; justify-content: space-between; margin: 0 0 13px; }
         .section-heading h2 { font-size: 16px; }
         .task-total { color: var(--muted); font-size: 11px; }
+        .history-section { margin-top: 30px; }
+        .history-list { display: grid; gap: 8px; }
+        .history-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+        .history-title { min-width: 0; margin: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+        .history-date { flex: 0 0 auto; color: var(--muted); font-size: 11px; }
         .content[hidden] { display: none; }
         .list-page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 30px; padding: 22px 24px; border-left: 4px solid var(--blue); border-radius: 8px; background: var(--blue-soft); }
         .list-page-header h1 { font-size: 34px; }
@@ -260,6 +265,10 @@
                         <div class="task-list" id="taskList" aria-live="polite"></div>
                     </section>
                 </div>
+                <section class="history-section" aria-labelledby="historyTitle">
+                    <div class="section-heading"><h2 id="historyTitle">Task history</h2><span class="task-total" id="homeHistoryCount">0 tasks</span></div>
+                    <div class="history-list" id="homeHistoryList" aria-live="polite"></div>
+                </section>
             </div>
 
             <div class="content" id="listPage" hidden>
@@ -400,9 +409,48 @@
                 openingNotice.hidden = false;
             }
 
+            function renderHomeHistory() {
+                const historyList = document.getElementById("homeHistoryList");
+                const historyTasks = [...tasks].sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0));
+                document.getElementById("homeHistoryCount").textContent = `${historyTasks.length} ${historyTasks.length === 1 ? "task" : "tasks"}`;
+                historyList.replaceChildren();
+
+                if (!historyTasks.length) {
+                    const empty = document.createElement("div");
+                    empty.className = "empty-state";
+                    const message = document.createElement("strong");
+                    message.textContent = "No task history yet";
+                    const detail = document.createElement("span");
+                    detail.textContent = "Tasks you create will appear here with their creation date.";
+                    empty.append(message, detail);
+                    historyList.append(empty);
+                    return;
+                }
+
+                historyTasks.forEach(task => {
+                    const item = document.createElement("article");
+                    item.className = "history-item";
+                    const title = document.createElement("p");
+                    title.className = "history-title";
+                    title.textContent = task.title;
+                    const date = document.createElement("time");
+                    date.className = "history-date";
+                    const createdAt = task.createdAt ? new Date(task.createdAt) : null;
+                    if (createdAt && !Number.isNaN(createdAt.getTime())) {
+                        date.dateTime = createdAt.toISOString();
+                        date.textContent = `Created ${createdAt.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
+                    } else {
+                        date.textContent = "Creation date unavailable";
+                    }
+                    item.append(title, date);
+                    historyList.append(item);
+                });
+            }
+
             function render() {
                 const activeTasks = tasks.filter(task => !task.done);
                 updateOpeningNotice(activeTasks.length);
+                renderHomeHistory();
                 const { start: todayStart, end: tomorrowStart } = getTodayBounds();
                 const dueToday = activeTasks.filter(task => {
                     const dueTime = new Date(task.dueAt).getTime();
@@ -489,7 +537,7 @@
                     due.textContent = dueLabel(task.dueAt);
                     const actions = document.createElement("div");
                     actions.className = "task-actions";
-                    if (!task.done) {
+                    if (!task.done && activeFilter !== "history") {
                         const snooze = document.createElement("select");
                         snooze.className = "snooze-select";
                         snooze.setAttribute("aria-label", `Snooze ${task.title}`);
@@ -520,7 +568,7 @@
                         });
                         actions.append(snooze);
                     }
-                    if (!task.done && task.snoozedFromDueAt) {
+                    if (!task.done && task.snoozedFromDueAt && activeFilter !== "history") {
                         const restore = document.createElement("button");
                         restore.className = "restore-snooze";
                         restore.type = "button";
@@ -630,7 +678,7 @@
             setDates();
             setInterval(setDates, 1000);
             dueInput.value = localDateTimeValue(new Date());
-            if ("Notification" in window && Notification.permission === "granted") document.getElementById("notificationLabel").textContent = "Notifications on";
+           if ("Notification" in window && Notification.permission === "granted") document.getElementById("notificationLabel").textContent = "Notifications on";
             syncPage();
             render();
             setInterval(checkDueReminders, 15000);
