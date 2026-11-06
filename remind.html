@@ -336,7 +336,8 @@
             }
 
             function setDates() {
-                const now = new Date();
+                // The browser clock is one hour ahead of the computer clock in this setup.
+                const now = new Date(Date.now() - 60 * 60 * 1000);
                 document.getElementById("topDate").textContent = now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
                 const date = now.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric", year: "numeric" });
                 const time = now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
