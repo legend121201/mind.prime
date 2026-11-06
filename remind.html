@@ -547,7 +547,7 @@
                 tasks.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, title, dueAt: dueAt.toISOString(), category: categoryInput.value, done: false, notified: false });
                 saveTasks();
                 form.reset();
-                dueInput.value = localDateTimeValue(new Date(Date.now() + 60 * 60 * 1000));
+                dueInput.value = localDateTimeValue(new Date());
                 render();
                 showToast("Reminder saved.");
                 titleInput.focus();
@@ -612,7 +612,7 @@
 
             setDates();
             setInterval(setDates, 1000);
-            dueInput.value = localDateTimeValue(new Date(Date.now() + 60 * 60 * 1000));
+            dueInput.value = localDateTimeValue(new Date());
             if ("Notification" in window && Notification.permission === "granted") document.getElementById("notificationLabel").textContent = "Notifications on";
             syncPage();
             render();
