@@ -105,6 +105,10 @@
 
         .section-heading { display: flex; align-items: center; justify-content: space-between; margin: 0 0 13px; }
         .section-heading h2 { font-size: 16px; }
+        .section-heading-main { display: flex; align-items: center; gap: 12px; }
+        .clear-history-button { border: 1px solid #ead3cc; border-radius: 5px; background: #fff; color: #a64c38; padding: 6px 9px; font-size: 10px; font-weight: 650; }
+        .clear-history-button:hover:not(:disabled) { background: #fbefeb; }
+        .clear-history-button:disabled { cursor: not-allowed; opacity: .5; }
         .task-total { color: var(--muted); font-size: 11px; }
         .history-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
         .history-details { min-width: 0; flex: 1; display: grid; justify-items: start; gap: 7px; }
@@ -313,7 +317,13 @@
 
                 <div id="dashboardListSlot">
                     <section id="reminderSection" aria-labelledby="listTitle">
-                        <div class="section-heading"><h2 id="listTitle">Today</h2><span class="task-total" id="visibleCount">0 reminders</span></div>
+                        <div class="section-heading">
+                            <div class="section-heading-main">
+                                <h2 id="listTitle">Today</h2>
+                                <button class="clear-history-button" id="clearReminderHistory" type="button" hidden>Delete all tasks history</button>
+                            </div>
+                            <span class="task-total" id="visibleCount">0 reminders</span>
+                        </div>
                         <div class="task-list" id="taskList" aria-live="polite"></div>
                     </section>
                 </div>
@@ -611,6 +621,9 @@
                 document.getElementById("listTitle").textContent = isToday ? "Today" : activeFilter === "history" ? "Task history" : activeFilter === "completed" ? "Completed reminders" : "Your reminders";
                 reminderSearch.placeholder = activeFilter === "history" ? "Search task history" : activeFilter === "completed" ? "Search completed reminders" : "Search reminders";
                 const isSavedTasksView = activeFilter === "history" && historyView === "saved";
+                const clearHistoryButton = document.getElementById("clearReminderHistory");
+                clearHistoryButton.hidden = !isHistoryReminderView();
+                clearHistoryButton.disabled = tasks.length === 0;
                 historyTabs.hidden = activeFilter !== "history";
                 historyTabButtons.forEach(button => {
                     const selected = button.dataset.historyView === historyView;
@@ -621,6 +634,10 @@
                 reminderSearchControl.hidden = isSavedTasksView;
                 reminderSection.hidden = isSavedTasksView;
                 savedTaskSection.hidden = !isSavedTasksView;
+            }
+
+            function isHistoryReminderView() {
+                return activeFilter === "history" && historyView === "reminders";
             }
 
             function visibleTasks() {
@@ -735,6 +752,9 @@
 
             function render() {
                 renderSavedTasks();
+                const clearHistoryButton = document.getElementById("clearReminderHistory");
+                clearHistoryButton.hidden = !isHistoryReminderView();
+                clearHistoryButton.disabled = tasks.length === 0;
                 const activeTasks = tasks.filter(task => !task.deleted && !task.done);
                 updateOpeningNotice(activeTasks.length);
                 const { start: todayStart, end: tomorrowStart } = getTodayBounds();
@@ -954,6 +974,17 @@
             }
 
             document.getElementById("confirmDelete").addEventListener("click", async () => {
+                if (pendingDeleteType === "all-reminder-history") {
+                    const previousTasks = tasks.map(item => ({ ...item }));
+                    tasks = [];
+                    if (!await saveTasks(previousTasks)) return;
+                    pendingDeleteId = null;
+                    pendingDeleteType = null;
+                    deleteDialog.close();
+                    render();
+                    showToast("All reminders and task history deleted.");
+                    return;
+                }
                 if (pendingDeleteType === "permanent-saved-task") {
                     const previousSavedTasks = savedTasks.map(item => ({ ...item }));
                     const taskExists = savedTasks.some(item => item.id === pendingDeleteId && item.deletedAt);
@@ -1012,6 +1043,14 @@
                 pendingDeleteId = null;
                 pendingDeleteType = null;
                 deleteDialog.close();
+            });
+
+            document.getElementById("clearReminderHistory").addEventListener("click", () => {
+                if (!isHistoryReminderView() || tasks.length === 0) return;
+                pendingDeleteId = null;
+                pendingDeleteType = "all-reminder-history";
+                document.getElementById("deleteDialogMessage").textContent = "Permanently delete all reminders and their history? This cannot be undone. Saved tasks will not be affected.";
+                deleteDialog.showModal();
             });
 
             document.getElementById("confirmFinish").addEventListener("click", async () => {
