@@ -107,12 +107,14 @@
         .section-heading h2 { font-size: 16px; }
         .task-total { color: var(--muted); font-size: 11px; }
         .history-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+        .history-details { min-width: 0; flex: 1; display: grid; justify-items: start; gap: 7px; }
         .saved-task-section { margin-bottom: 30px; }
         .saved-task-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; margin-bottom: 17px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
         .saved-task-group { margin-top: 20px; }
         .saved-task-group h3 { margin: 0 0 10px; color: #59645d; font-size: 12px; }
         .history-title { min-width: 0; margin: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
         .history-date { flex: 0 0 auto; color: var(--muted); font-size: 11px; }
+        .history-status { display: inline-block; border-radius: 4px; background: var(--green-soft); color: var(--green-dark); padding: 5px 8px; font-size: 11px; font-weight: 700; }
         .content[hidden] { display: none; }
         .list-page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 30px; padding: 22px 24px; border-left: 4px solid var(--blue); border-radius: 8px; background: var(--blue-soft); }
         .list-page-header h1 { font-size: 34px; }
@@ -605,7 +607,7 @@
                     else button.removeAttribute("aria-current");
                 });
                 document.getElementById("listPageTitle").textContent = activeFilter === "history" ? "History" : activeFilter === "completed" ? "Completed" : "All reminders";
-                document.getElementById("listPageDescription").textContent = activeFilter === "history" ? "See when each task was created." : activeFilter === "completed" ? "Your finished tasks, all in one place." : "Find a task by its name or subject.";
+                document.getElementById("listPageDescription").textContent = activeFilter === "history" ? "See when each task was created and whether deleted reminders were completed beforehand." : activeFilter === "completed" ? "Your finished tasks, all in one place." : "Find a task by its name or subject.";
                 document.getElementById("listTitle").textContent = isToday ? "Today" : activeFilter === "history" ? "Task history" : activeFilter === "completed" ? "Completed reminders" : "Your reminders";
                 reminderSearch.placeholder = activeFilter === "history" ? "Search task history" : activeFilter === "completed" ? "Search completed reminders" : "Search reminders";
                 const isSavedTasksView = activeFilter === "history" && historyView === "saved";
@@ -760,7 +762,7 @@
                     const message = document.createElement("strong");
                     message.textContent = hasSearch ? "No matching reminders" : activeFilter === "today" ? "Nothing due today" : activeFilter === "upcoming" ? "No reminders yet" : activeFilter === "history" ? "No task history yet" : "No finished tasks yet";
                     const detail = document.createElement("span");
-                    detail.textContent = hasSearch ? "Try a different task name or subject." : activeFilter === "today" ? "Add a reminder above and give your day a little structure." : activeFilter === "upcoming" ? "Add a reminder above and it’ll show up here." : activeFilter === "history" ? "New reminders will appear here with their creation date." : "Completed reminders will land here.";
+                    detail.textContent = hasSearch ? "Try a different task name or subject." : activeFilter === "today" ? "Add a reminder above and give your day a little structure." : activeFilter === "upcoming" ? "Add a reminder above and it’ll show up here." : activeFilter === "history" ? "Deleted reminders will show whether they were completed before deletion." : "Completed reminders will land here.";
                     empty.append(mark, message, detail);
                     taskList.append(empty);
                     return;
@@ -775,6 +777,9 @@
                         title.textContent = task.title;
                         const created = document.createElement("time");
                         created.className = "history-date";
+                        const details = document.createElement("div");
+                        details.className = "history-details";
+                        details.append(title);
                         const createdAt = task.createdAt ? new Date(task.createdAt) : null;
                         if (createdAt && !Number.isNaN(createdAt.getTime())) {
                             created.dateTime = createdAt.toISOString();
@@ -782,8 +787,15 @@
                         } else {
                             created.textContent = "Creation date unavailable";
                         }
+                        let restore = null;
                         if (task.deleted) {
-                            const restore = document.createElement("button");
+                            const deletionStatus = document.createElement("span");
+                            deletionStatus.className = "history-status";
+                            deletionStatus.textContent = (task.deletedAfterCompletion ?? task.done)
+                                ? "This task was completed before it was deleted."
+                                : "This task was deleted before it was completed.";
+                            details.append(deletionStatus);
+                            restore = document.createElement("button");
                             restore.className = "restore-snooze";
                             restore.type = "button";
                             restore.textContent = "Restore";
@@ -792,9 +804,9 @@
                                 const previousTasks = tasks.map(item => ({ ...item }));
                                 task.deleted = false;
                                 delete task.deletedAt;
+                                delete task.deletedAfterCompletion;
                                 if (await commitTaskChanges(previousTasks)) showToast("Reminder restored.");
                             });
-                            item.append(restore);
                         }
                         const remove = document.createElement("button");
                         remove.className = "delete-button";
@@ -808,7 +820,9 @@
                             document.getElementById("deleteDialogMessage").textContent = "Permanently delete this task from history?";
                             deleteDialog.showModal();
                         });
-                        item.append(title, created, remove);
+                        item.append(details, created);
+                        if (restore) item.append(restore);
+                        item.append(remove);
                         taskList.append(item);
                         return;
                     }
@@ -978,6 +992,7 @@
                     if (task) {
                         task.deleted = true;
                         task.deletedAt = new Date().toISOString();
+                        task.deletedAfterCompletion = task.done;
                     }
                 }
                 if (!await saveTasks(previousTasks)) return;
