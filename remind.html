@@ -646,6 +646,12 @@
                 openingNotice.hidden = false;
             }
 
+            function wasCompletedBeforeDeletion(task) {
+                if (typeof task.deletedAfterCompletion === "boolean") return task.deletedAfterCompletion;
+                if (typeof task.deletedAfterCompletion === "string") return task.deletedAfterCompletion.toLowerCase() === "true";
+                return task.done === true || task.done === "true";
+            }
+
             function appendSavedTaskEmptyState(list, message) {
                 const empty = document.createElement("div");
                 empty.className = "empty-state";
@@ -791,7 +797,7 @@
                         if (task.deleted) {
                             const deletionStatus = document.createElement("span");
                             deletionStatus.className = "history-status";
-                            deletionStatus.textContent = (task.deletedAfterCompletion ?? task.done)
+                            deletionStatus.textContent = wasCompletedBeforeDeletion(task)
                                 ? "This task was completed before it was deleted."
                                 : "This task was deleted before it was completed.";
                             details.append(deletionStatus);
@@ -992,7 +998,7 @@
                     if (task) {
                         task.deleted = true;
                         task.deletedAt = new Date().toISOString();
-                        task.deletedAfterCompletion = task.done;
+                        task.deletedAfterCompletion = task.done === true;
                     }
                 }
                 if (!await saveTasks(previousTasks)) return;
