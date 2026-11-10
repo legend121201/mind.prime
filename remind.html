@@ -107,6 +107,10 @@
         .section-heading h2 { font-size: 16px; }
         .task-total { color: var(--muted); font-size: 11px; }
         .history-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+        .saved-task-section { margin-bottom: 30px; }
+        .saved-task-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; margin-bottom: 17px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+        .saved-task-group { margin-top: 20px; }
+        .saved-task-group h3 { margin: 0 0 10px; color: #59645d; font-size: 12px; }
         .history-title { min-width: 0; margin: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
         .history-date { flex: 0 0 auto; color: var(--muted); font-size: 11px; }
         .content[hidden] { display: none; }
@@ -214,6 +218,8 @@
             .stat-number { font-size: 19px; }
             .stat-label { font-size: 9px; line-height: 1.3; }
             .composer { padding: 17px 14px 14px; margin-bottom: 27px; }
+            .saved-task-form { grid-template-columns: 1fr; padding: 13px; }
+            .saved-task-form .add-button { width: 100%; }
             .form-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
             .field:first-child { grid-column: 1 / -1; }
             .field input, .field select { height: 40px; font-size: 11px; padding: 0 8px; }
@@ -318,6 +324,24 @@
                         <input id="reminderSearch" type="search" placeholder="Search reminders" autocomplete="off">
                     </label>
                 </section>
+                <section class="saved-task-section" id="savedTaskSection" aria-labelledby="savedTaskTitle" hidden>
+                    <div class="section-heading">
+                        <h2 id="savedTaskTitle">Saved tasks (no reminders)</h2>
+                        <span class="task-total" id="savedTaskCount">0 tasks</span>
+                    </div>
+                    <form class="saved-task-form" id="savedTaskForm">
+                        <div class="field">
+                            <label for="savedTaskInput">TASK TO KEEP</label>
+                            <input id="savedTaskInput" type="text" maxlength="120" placeholder="e.g. Look into a new hobby" required>
+                        </div>
+                        <button class="add-button" type="submit">＋ Save task</button>
+                    </form>
+                    <div class="task-list" id="savedTaskList" aria-live="polite"></div>
+                    <div class="saved-task-group">
+                        <h3>Deleted saved tasks</h3>
+                        <div class="task-list" id="deletedSavedTaskList" aria-live="polite"></div>
+                    </div>
+                </section>
                 <div id="listPageListSlot"></div>
             </div>
         </main>
@@ -393,10 +417,16 @@
     <script>
         (() => {
             const STORAGE_KEY = "reminder.prime.tasks.v1";
+            const SAVED_TASKS_KEY = "reminder.prime.saved-tasks.v1";
             const form = document.getElementById("reminderForm");
             const titleInput = document.getElementById("taskTitle");
             const dueInput = document.getElementById("taskDue");
             const categoryInput = document.getElementById("taskCategory");
+            const savedTaskForm = document.getElementById("savedTaskForm");
+            const savedTaskInput = document.getElementById("savedTaskInput");
+            const savedTaskSection = document.getElementById("savedTaskSection");
+            const savedTaskList = document.getElementById("savedTaskList");
+            const deletedSavedTaskList = document.getElementById("deletedSavedTaskList");
             const taskList = document.getElementById("taskList");
             const toast = document.getElementById("toast");
             const filterButtons = [...document.querySelectorAll(".nav-item")];
@@ -418,11 +448,14 @@
             let activeFilter = location.hash === "#history" ? "today" : filterFromHash();
             let searchQuery = "";
             let pendingDeleteId = null;
+            let pendingDeleteType = null;
             let pendingFinishId = null;
             let editingTaskId = null;
             let toastTimer;
             let tasks = [];
             let storageReady = true;
+            let savedTasks = [];
+            let savedTasksStorageReady = true;
 
             function showToast(message) {
                 toast.textContent = message;
@@ -467,6 +500,38 @@
                 } catch (error) {
                     storageReady = false;
                     showToast(`Could not load reminders saved in this browser: ${error.message}`);
+                    return [];
+                }
+            }
+
+            async function saveSavedTasks(previousSavedTasks) {
+                if (!savedTasksStorageReady) {
+                    savedTasks = previousSavedTasks;
+                    showToast("Saved tasks aren’t being saved because browser storage couldn’t be read. Reload the page to try again.");
+                    render();
+                    return false;
+                }
+                try {
+                    localStorage.setItem(SAVED_TASKS_KEY, JSON.stringify(savedTasks));
+                    return true;
+                } catch (error) {
+                    savedTasks = previousSavedTasks;
+                    showToast(`Could not save your task in this browser: ${error.message}`);
+                    render();
+                    return false;
+                }
+            }
+
+            function loadSavedTasks() {
+                try {
+                    const saved = JSON.parse(localStorage.getItem(SAVED_TASKS_KEY) || "[]");
+                    if (!Array.isArray(saved) || saved.some(task => !task || typeof task.id !== "string" || typeof task.title !== "string" || typeof task.createdAt !== "string" || (task.deletedAt !== undefined && typeof task.deletedAt !== "string"))) {
+                        throw new Error("Saved task data is invalid.");
+                    }
+                    return saved;
+                } catch (error) {
+                    savedTasksStorageReady = false;
+                    showToast(`Could not load saved tasks in this browser: ${error.message}`);
                     return [];
                 }
             }
@@ -531,6 +596,7 @@
                 document.getElementById("listPageDescription").textContent = activeFilter === "history" ? "See when each task was created." : activeFilter === "completed" ? "Your finished tasks, all in one place." : "Find a task by its name or subject.";
                 document.getElementById("listTitle").textContent = isToday ? "Today" : activeFilter === "history" ? "Task history" : activeFilter === "completed" ? "Completed reminders" : "Your reminders";
                 reminderSearch.placeholder = activeFilter === "history" ? "Search task history" : activeFilter === "completed" ? "Search completed reminders" : "Search reminders";
+                savedTaskSection.hidden = activeFilter !== "history";
             }
 
             function visibleTasks() {
@@ -556,7 +622,77 @@
                 openingNotice.hidden = false;
             }
 
+            function appendSavedTaskEmptyState(list, message) {
+                const empty = document.createElement("div");
+                empty.className = "empty-state";
+                const label = document.createElement("strong");
+                label.textContent = message;
+                empty.append(label);
+                list.append(empty);
+            }
+
+            function renderSavedTasks() {
+                const activeSavedTasks = savedTasks.filter(task => !task.deletedAt);
+                const deletedTasks = savedTasks.filter(task => task.deletedAt).sort((a, b) => Date.parse(b.deletedAt) - Date.parse(a.deletedAt));
+                document.getElementById("savedTaskCount").textContent = `${activeSavedTasks.length} task${activeSavedTasks.length === 1 ? "" : "s"}`;
+                savedTaskList.replaceChildren();
+                deletedSavedTaskList.replaceChildren();
+
+                if (!activeSavedTasks.length) appendSavedTaskEmptyState(savedTaskList, "No saved tasks yet");
+                activeSavedTasks.forEach(task => {
+                    const item = document.createElement("article");
+                    item.className = "history-item";
+                    const title = document.createElement("p");
+                    title.className = "history-title";
+                    title.textContent = task.title;
+                    const created = document.createElement("time");
+                    created.className = "history-date";
+                    created.textContent = `Saved ${new Date(task.createdAt).toLocaleDateString()}`;
+                    const remove = document.createElement("button");
+                    remove.className = "delete-button";
+                    remove.type = "button";
+                    remove.textContent = "Delete";
+                    remove.setAttribute("aria-label", `Delete saved task ${task.title}`);
+                    remove.addEventListener("click", () => {
+                        pendingDeleteId = task.id;
+                        pendingDeleteType = "saved-task";
+                        document.getElementById("deleteDialogMessage").textContent = `Move “${task.title}” to deleted saved tasks?`;
+                        deleteDialog.showModal();
+                    });
+                    item.append(title, created, remove);
+                    savedTaskList.append(item);
+                });
+
+                if (!deletedTasks.length) appendSavedTaskEmptyState(deletedSavedTaskList, "Deleted saved tasks will appear here");
+                deletedTasks.forEach(task => {
+                    const item = document.createElement("article");
+                    item.className = "history-item";
+                    const title = document.createElement("p");
+                    title.className = "history-title";
+                    title.textContent = task.title;
+                    const deleted = document.createElement("time");
+                    deleted.className = "history-date";
+                    deleted.textContent = `Deleted ${new Date(task.deletedAt).toLocaleDateString()}`;
+                    const restore = document.createElement("button");
+                    restore.className = "restore-snooze";
+                    restore.type = "button";
+                    restore.textContent = "Restore";
+                    restore.setAttribute("aria-label", `Restore saved task ${task.title}`);
+                    restore.addEventListener("click", async () => {
+                        const previousSavedTasks = savedTasks.map(item => ({ ...item }));
+                        delete task.deletedAt;
+                        if (await saveSavedTasks(previousSavedTasks)) {
+                            render();
+                            showToast("Saved task restored.");
+                        }
+                    });
+                    item.append(title, deleted, restore);
+                    deletedSavedTaskList.append(item);
+                });
+            }
+
             function render() {
+                renderSavedTasks();
                 const activeTasks = tasks.filter(task => !task.deleted && !task.done);
                 updateOpeningNotice(activeTasks.length);
                 const { start: todayStart, end: tomorrowStart } = getTodayBounds();
@@ -634,6 +770,7 @@
                         remove.setAttribute("aria-label", `Delete ${task.title} from history`);
                         remove.addEventListener("click", () => {
                             pendingDeleteId = task.id;
+                            pendingDeleteType = "reminder-history";
                             document.getElementById("deleteDialogMessage").textContent = "Permanently delete this task from history?";
                             deleteDialog.showModal();
                         });
@@ -752,6 +889,7 @@
                     remove.setAttribute("aria-label", `Delete ${task.title}`);
                     remove.addEventListener("click", () => {
                         pendingDeleteId = task.id;
+                        pendingDeleteType = "reminder";
                         document.getElementById("deleteDialogMessage").textContent = "Move this reminder to history?";
                         deleteDialog.showModal();
                     });
@@ -762,8 +900,26 @@
             }
 
             document.getElementById("confirmDelete").addEventListener("click", async () => {
+                if (pendingDeleteType === "saved-task") {
+                    const previousSavedTasks = savedTasks.map(item => ({ ...item }));
+                    const task = savedTasks.find(item => item.id === pendingDeleteId);
+                    if (!task) {
+                        pendingDeleteId = null;
+                        pendingDeleteType = null;
+                        deleteDialog.close();
+                        return;
+                    }
+                    task.deletedAt = new Date().toISOString();
+                    if (!await saveSavedTasks(previousSavedTasks)) return;
+                    pendingDeleteId = null;
+                    pendingDeleteType = null;
+                    deleteDialog.close();
+                    render();
+                    showToast("Saved task moved to deleted saved tasks.");
+                    return;
+                }
                 const previousTasks = tasks.map(item => ({ ...item }));
-                if (activeFilter === "history") {
+                if (pendingDeleteType === "reminder-history") {
                     tasks = tasks.filter(task => task.id !== pendingDeleteId);
                 } else {
                     const task = tasks.find(item => item.id === pendingDeleteId);
@@ -774,12 +930,14 @@
                 }
                 if (!await saveTasks(previousTasks)) return;
                 pendingDeleteId = null;
+                pendingDeleteType = null;
                 deleteDialog.close();
                 render();
             });
 
             document.getElementById("cancelDelete").addEventListener("click", () => {
                 pendingDeleteId = null;
+                pendingDeleteType = null;
                 deleteDialog.close();
             });
 
@@ -836,6 +994,23 @@
 
             deleteDialog.addEventListener("close", () => {
                 pendingDeleteId = null;
+                pendingDeleteType = null;
+            });
+
+            savedTaskForm.addEventListener("submit", async event => {
+                event.preventDefault();
+                const title = savedTaskInput.value.trim();
+                if (!title) {
+                    showToast("Enter a task to save.");
+                    return;
+                }
+                const previousSavedTasks = savedTasks.map(task => ({ ...task }));
+                savedTasks.push({ id: createTaskId(), title, createdAt: new Date().toISOString() });
+                if (!await saveSavedTasks(previousSavedTasks)) return;
+                savedTaskForm.reset();
+                render();
+                showToast("Task saved without a reminder.");
+                savedTaskInput.focus();
             });
 
             form.addEventListener("submit", async event => {
@@ -917,6 +1092,7 @@
             setDates();
             setInterval(setDates, 1000);
             tasks = loadTasks();
+            savedTasks = loadSavedTasks();
             dueInput.value = localDateTimeValue(new Date());
             if ("Notification" in window && Notification.permission === "granted") document.getElementById("notificationLabel").textContent = "Notifications on";
             syncPage();
