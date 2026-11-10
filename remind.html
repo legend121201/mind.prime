@@ -50,6 +50,8 @@
         .sidebar-note { margin-top: auto; padding: 15px 13px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.6; }
         .sidebar-note strong { display: block; color: var(--ink); font-size: 12px; margin-bottom: 4px; }
 
+        [hidden] { display: none !important; }
+
         .main { padding: 31px clamp(22px, 5vw, 72px) 60px; min-width: 0; }
         .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 1080px; margin: 0 auto; }
         .opening-notice { max-width: 1080px; margin: 17px auto 0; padding: 11px 13px; display: flex; align-items: center; gap: 11px; border: 1px solid #efd9c8; border-radius: 7px; background: #fff8f1; color: #543d30; }
@@ -60,8 +62,13 @@
         .notice-review:hover { background: #f7eade; }
         .date-kicker { color: var(--muted); font-size: 12px; font-weight: 600; }
         .top-actions { display: flex; align-items: center; gap: 12px; }
+        .top-actions button { min-height: 36px; box-shadow: 0 2px 6px rgba(32, 42, 39, .04); transition: border-color .18s ease, color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease; }
+        .top-actions button:hover { transform: translateY(-1px); box-shadow: 0 5px 12px rgba(32, 42, 39, .1); }
+        .top-actions button:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(32, 42, 39, .08); }
         .notification-button { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #c9ded0; background: var(--green-soft); color: var(--green-dark); border-radius: 7px; padding: 9px 12px; font-size: 12px; font-weight: 600; transition: border-color .18s, transform .18s; }
         .notification-button:hover { border-color: #b8c8bc; transform: translateY(-1px); }
+        .about-button { border: 1px solid var(--line); border-radius: 7px; background: white; color: #59645d; padding: 9px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+        .about-button:hover { border-color: #b8c8bc; color: var(--green-dark); }
         .avatar { width: 33px; height: 33px; display: grid; place-items: center; border-radius: 50%; background: #ead9c8; color: #6f4a35; font-size: 12px; font-weight: 700; }
         .content { max-width: 1080px; margin: 52px auto 0; }
         .welcome-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 29px; padding: 22px 24px; border-left: 4px solid var(--green); border-radius: 8px; background: #eaf3ed; }
@@ -132,6 +139,8 @@
         .snooze-select:focus { outline: 2px solid rgba(53,119,93,.25); outline-offset: 1px; }
         .restore-snooze { border: 0; border-radius: 5px; background: transparent; color: var(--blue); padding: 6px; font-size: 10px; font-weight: 650; white-space: nowrap; }
         .restore-snooze:hover { background: var(--blue-soft); }
+        .edit-button { border: 1px solid var(--line); border-radius: 5px; background: #fff; color: #59645d; padding: 6px 8px; font-size: 10px; font-weight: 650; white-space: nowrap; }
+        .edit-button:hover { border-color: #b8c8bc; color: var(--green-dark); }
         .overdue-message { margin: 7px 0 0; color: #b45231; font-size: 11px; font-weight: 650; }
         .task.overdue:not(.done) .due { color: #b45231; font-weight: 650; }
         .task.done .task-title { color: #929b95; text-decoration: line-through; }
@@ -145,6 +154,20 @@
         .delete-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
         .delete-dialog-actions button { border: 1px solid var(--line); border-radius: 6px; background: white; color: #59645d; padding: 9px 13px; font-size: 12px; font-weight: 650; }
         .delete-dialog-actions .confirm-delete { border-color: #b45231; background: #b45231; color: white; }
+        .edit-dialog h2 { margin: 0 0 18px; font-size: 19px; }
+        .edit-form { display: grid; gap: 14px; }
+        .edit-form input, .edit-form select { width: 100%; height: 41px; border: 1px solid #dfe4dd; border-radius: 6px; background: #fff; padding: 0 11px; color: var(--ink); font-size: 12px; }
+        .edit-form input:focus, .edit-form select:focus { border-color: var(--green); outline: 3px solid rgba(53,119,93,.11); }
+        .edit-form .add-button { border: 0; background: var(--green); color: white; }
+        .about-dialog { width: min(560px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: 8px; padding: 26px; color: var(--ink); box-shadow: var(--shadow); }
+        .about-dialog::backdrop { background: rgba(32, 42, 39, .42); }
+        .about-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+        .about-dialog-header span { color: var(--green); font-size: 9px; font-weight: 700; letter-spacing: 1.2px; }
+        .about-dialog h2 { margin: 5px 0 0; font-size: 22px; line-height: 1.25; }
+        .about-dialog-copy { display: grid; gap: 16px; }
+        .about-dialog-copy p { margin: 0; color: #647069; font-size: 13px; line-height: 1.65; }
+        .about-dialog-copy strong { display: block; margin-bottom: 3px; color: var(--ink); font-size: 12px; }
+        .about-dialog-close { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 6px; background: white; color: #59645d; padding: 7px 10px; font-size: 11px; font-weight: 600; }
         .empty-state { background: rgba(255,255,255,.55); border: 1px dashed #d7ddd5; border-radius: 8px; padding: 34px 20px; text-align: center; color: var(--muted); }
         .empty-mark { width: 43px; height: 43px; margin: 0 auto 12px; display: grid; place-items: center; border-radius: 14px; background: var(--green-soft); color: var(--green); font-size: 19px; }
         .empty-state strong { display: block; color: var(--ink); font-size: 13px; margin-bottom: 5px; }
@@ -169,7 +192,7 @@
             .mobile-brand .brand-name { font-size: 14px; }
             .topbar { gap: 10px; }
             .date-kicker { display: none; }
-            .notification-button { padding: 8px 9px; font-size: 11px; }
+            .notification-button, .about-button { padding: 8px 9px; font-size: 10px; }
             .avatar { display: none; }
             .mobile-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 14px; }
             .mobile-nav .nav-item { justify-content: center; gap: 5px; padding: 9px 5px; font-size: 10px; }
@@ -202,10 +225,14 @@
             .task-meta { flex-wrap: wrap; }
             .toast { right: 16px; bottom: 16px; }
         }
+        @media (max-width: 380px) {
+            .notification-button { width: 35px; justify-content: center; padding: 8px; }
+            #notificationLabel { display: none; }
+        }
     </style>
 </head>
 <body>
-    <div class="app-shell">
+    <div class="app-shell" id="appShell">
         <aside class="sidebar" aria-label="Main navigation">
             <a class="brand" href="#today" aria-label="reminder.prime home">
                 <span class="brand-mark" aria-hidden="true">r.</span>
@@ -218,7 +245,7 @@
                 <button class="nav-item" type="button" data-filter="completed"><span class="nav-icon" aria-hidden="true">✓</span> Completed <span class="nav-count" id="completedCount">0</span></button>
                 <button class="nav-item" type="button" data-filter="history"><span class="nav-icon" aria-hidden="true">◴</span> History</button>
             </nav>
-            <div class="sidebar-note"><strong>A little more on top of it.</strong>Your reminders stay saved in this browser, ready when you are.</div>
+            <div class="sidebar-note"><strong>A little more on top of it.</strong>Your reminders are saved in this browser and won’t sync to other devices.</div>
         </aside>
 
         <main class="main" id="today">
@@ -226,8 +253,9 @@
                 <div class="mobile-brand" aria-label="reminder.prime"><span class="brand-mark" aria-hidden="true">r.</span><span class="brand-name">reminder<span style="color:var(--green)">.prime</span></span></div>
                 <div class="date-kicker" id="topDate"></div>
                 <div class="top-actions">
-                    <button class="notification-button" id="notificationButton" type="button"><span aria-hidden="true">♧</span><span id="notificationLabel">Enable notifications</span></button>
-                    <span class="avatar" aria-label="Your profile">P</span>
+                    <button class="about-button" id="guideButton" type="button" aria-haspopup="dialog">How to use</button>
+                    <button class="about-button" id="aboutButton" type="button">About us</button>
+                    <button class="notification-button" id="notificationButton" type="button" aria-label="Enable notifications"><span aria-hidden="true">♧</span><span id="notificationLabel">Enable notifications</span></button>
                 </div>
             </header>
             <nav class="mobile-nav nav-list" aria-label="Reminder views">
@@ -241,7 +269,6 @@
                 <p id="openingNoticeText"></p>
                 <button class="notice-review" id="reviewOpenTasks" type="button">Review reminders</button>
             </aside>
-
             <div class="content" id="dashboardPage">
                 <section class="welcome-row" aria-labelledby="pageTitle">
                     <div>
@@ -259,12 +286,12 @@
 
                 <section class="composer" aria-labelledby="composerTitle">
                     <div class="composer-heading">
-                        <div><h2 id="composerTitle">Add a reminder</h2><p>Give your future self a nudge.</p></div>
+                        <div><h2 id="composerTitle">Add a reminder</h2><h6>Give your future perfect meaning.</h6></div>
                     </div>
                     <form id="reminderForm">
                         <div class="form-grid">
-                            <div class="field"><label for="taskTitle">WHAT DO YOU NEED TO DO?</label><input id="taskTitle" name="title" type="text" placeholder="e.g. Finish JavaScript homework" maxlength="120" required></div>
-                            <div class="field"><label for="taskDue">WHEN SHOULD WE REMIND YOU?</label><input id="taskDue" name="due" type="datetime-local" required></div>
+                            <div class="field"><label for="taskTitle">WHAT DO YOU NEED TO DO?</label><input id="taskTitle" name="title" type="text" placeholder="e.g. Mathematic homework" maxlength="120" required></div>
+                            <div class="field"><label for="taskDue">WHEN DO YOU WANT TO FINISH?</label><input id="taskDue" name="due" type="datetime-local" required></div>
                             <div class="field"><label for="taskCategory">SUBJECT</label><select id="taskCategory" name="category"><option>Personal</option><option>School</option><option>Work</option><option>Health</option><option>Other</option></select></div>
                             <button class="add-button" type="submit">＋ Add reminder</button>
                         </div>
@@ -295,12 +322,71 @@
             </div>
         </main>
     </div>
+    <dialog class="about-dialog" id="aboutDialog" aria-labelledby="aboutTitle">
+        <div class="about-dialog-header">
+            <div>
+                <span>ABOUT REMINDER.PRIME</span>
+                <h2 id="aboutTitle">A little more space for what matters.</h2>
+            </div>
+            <button class="about-dialog-close" id="closeAbout" type="button">Close</button>
+        </div>
+        <div class="about-dialog-copy">
+            <p><strong>What it does</strong>Keep personal, school, work, and health reminders together. Set due dates, follow what is coming up, and keep track of completed tasks.</p>
+            <p><strong>Why it was created</strong>To make it easier to remember everyday commitments and spend less time worrying about what might be forgotten.</p>
+        </div>
+    </dialog>
+    <dialog class="about-dialog" id="guideDialog" aria-labelledby="guideTitle">
+        <div class="about-dialog-header">
+            <div>
+                <span>QUICK GUIDE</span>
+                <h2 id="guideTitle">Make your reminders work for you.</h2>
+            </div>
+            <button class="about-dialog-close" id="closeGuide" type="button">Close</button>
+        </div>
+        <div class="about-dialog-copy">
+            <p><strong>1. Capture the task</strong>Add a short, specific reminder as soon as you think of it, so you don’t have to keep it in your head.</p>
+            <p><strong>2. Choose a realistic time</strong>Set when you want to do it, then use a subject such as School, Work, or Personal to keep things organized.</p>
+            <p><strong>3. Check Today and All reminders</strong>Use Today to focus on what’s due now, or All reminders to search and plan ahead. Mark finished tasks complete to keep your list clear.</p>
+            <p><strong>4. Adjust when plans change</strong>Choose Edit to change the title, time, or subject. Snooze for a short delay, or restore the original time if you change your mind.</p>
+            <p><strong>5. Let reminders alert you</strong>Allow browser notifications, and keep this page open for alerts. Reminders are saved only in this browser and don’t sync to other devices.</p>
+        </div>
+    </dialog>
     <dialog class="delete-dialog" id="deleteDialog" aria-labelledby="deleteDialogMessage">
         <p id="deleteDialogMessage">Do you really want to delete this task?</p>
         <div class="delete-dialog-actions">
             <button class="confirm-delete" id="confirmDelete" type="button">Confirm</button>
             <button id="cancelDelete" type="button">Cancel</button>
         </div>
+    </dialog>
+    <dialog class="delete-dialog" id="finishDialog" aria-labelledby="finishDialogMessage">
+        <p id="finishDialogMessage">Press OK to mark this reminder as finished. The app will save the change in this browser and confirm when it succeeds.</p>
+        <div class="delete-dialog-actions">
+            <button class="confirm-delete" id="confirmFinish" type="button">OK</button>
+            <button id="cancelFinish" type="button">Cancel</button>
+        </div>
+    </dialog>
+    <dialog class="delete-dialog edit-dialog" id="editDialog" aria-labelledby="editDialogTitle">
+        <h2 id="editDialogTitle">Edit reminder</h2>
+        <form class="edit-form" id="editForm">
+            <div class="field">
+                <label for="editTitle">REMINDER</label>
+                <input id="editTitle" type="text" maxlength="120" required>
+            </div>
+            <div class="field">
+                <label for="editDue">WHEN</label>
+                <input id="editDue" type="datetime-local" required>
+            </div>
+            <div class="field">
+                <label for="editCategory">SUBJECT</label>
+                <select id="editCategory">
+                    <option>Personal</option><option>School</option><option>Work</option><option>Health</option><option>Other</option>
+                </select>
+            </div>
+            <div class="delete-dialog-actions">
+                <button class="add-button" type="submit">Save changes</button>
+                <button id="cancelEdit" type="button">Cancel</button>
+            </div>
+        </form>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -320,35 +406,75 @@
             const reminderSearch = document.getElementById("reminderSearch");
             const openingNotice = document.getElementById("openingNotice");
             const openingNoticeText = document.getElementById("openingNoticeText");
+            const aboutDialog = document.getElementById("aboutDialog");
+            const guideDialog = document.getElementById("guideDialog");
             const deleteDialog = document.getElementById("deleteDialog");
+            const finishDialog = document.getElementById("finishDialog");
+            const editDialog = document.getElementById("editDialog");
+            const editForm = document.getElementById("editForm");
+            const editTitleInput = document.getElementById("editTitle");
+            const editDueInput = document.getElementById("editDue");
+            const editCategoryInput = document.getElementById("editCategory");
             let activeFilter = location.hash === "#history" ? "today" : filterFromHash();
             let searchQuery = "";
             let pendingDeleteId = null;
+            let pendingFinishId = null;
+            let editingTaskId = null;
             let toastTimer;
-            let tasks = loadTasks();
-
-            function loadTasks() {
-                try {
-                    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-                    return Array.isArray(saved) ? saved.filter(task => task && task.id && task.title && task.dueAt) : [];
-                } catch {
-                    return [];
-                }
-            }
-
-            function saveTasks() {
-                try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-                } catch {
-                    showToast("Your browser couldn’t save this reminder. Check available storage.");
-                }
-            }
+            let tasks = [];
+            let storageReady = true;
 
             function showToast(message) {
                 toast.textContent = message;
                 toast.classList.add("show");
                 clearTimeout(toastTimer);
                 toastTimer = setTimeout(() => toast.classList.remove("show"), 4200);
+            }
+
+            function createTaskId() {
+                if (crypto.randomUUID) return crypto.randomUUID();
+                return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, character => {
+                    const random = Math.random() * 16 | 0;
+                    return (character === "x" ? random : (random & 3 | 8)).toString(16);
+                });
+            }
+
+            async function saveTasks(previousTasks) {
+                if (!storageReady) {
+                    tasks = previousTasks;
+                    showToast("Reminders aren’t being saved because browser storage couldn’t be read. Reload the page to try again.");
+                    render();
+                    return false;
+                }
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+                    return true;
+                } catch (error) {
+                    tasks = previousTasks;
+                    showToast(`Could not save your change in this browser: ${error.message}`);
+                    render();
+                    return false;
+                }
+            }
+
+            function loadTasks() {
+                try {
+                    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+                    if (!Array.isArray(saved) || saved.some(task => !task || typeof task.title !== "string" || typeof task.dueAt !== "string")) {
+                        throw new Error("Saved reminder data is invalid.");
+                    }
+                    return saved;
+                } catch (error) {
+                    storageReady = false;
+                    showToast(`Could not load reminders saved in this browser: ${error.message}`);
+                    return [];
+                }
+            }
+
+            async function commitTaskChanges(previousTasks) {
+                if (!await saveTasks(previousTasks)) return false;
+                render();
+                return true;
             }
 
             function localDateTimeValue(date) {
@@ -408,12 +534,15 @@
             }
 
             function visibleTasks() {
-                const { end: tomorrowStart } = getTodayBounds();
+                const { start: todayStart, end: tomorrowStart } = getTodayBounds();
                 let shown;
                 if (activeFilter === "history") shown = [...tasks];
-                else if (activeFilter === "completed") shown = tasks.filter(task => task.done);
-                else if (activeFilter === "upcoming") shown = tasks.filter(task => !task.done);
-                else shown = tasks.filter(task => !task.done && new Date(task.dueAt).getTime() < tomorrowStart);
+                else if (activeFilter === "completed") shown = tasks.filter(task => !task.deleted && task.done);
+                else if (activeFilter === "upcoming") shown = tasks.filter(task => !task.deleted && !task.done);
+                else shown = tasks.filter(task => {
+                    const dueTime = new Date(task.dueAt).getTime();
+                    return !task.deleted && !task.done && dueTime >= todayStart && dueTime < tomorrowStart;
+                });
                 const query = activeFilter === "today" ? "" : searchQuery.trim().toLocaleLowerCase();
                 return query ? shown.filter(task => `${task.title} ${task.category || "Personal"}`.toLocaleLowerCase().includes(query)) : shown;
             }
@@ -428,7 +557,7 @@
             }
 
             function render() {
-                const activeTasks = tasks.filter(task => !task.done);
+                const activeTasks = tasks.filter(task => !task.deleted && !task.done);
                 updateOpeningNotice(activeTasks.length);
                 const { start: todayStart, end: tomorrowStart } = getTodayBounds();
                 const dueToday = activeTasks.filter(task => {
@@ -436,7 +565,7 @@
                     return dueTime >= todayStart && dueTime < tomorrowStart;
                 }).length;
                 const upcoming = activeTasks.filter(task => new Date(task.dueAt).getTime() >= tomorrowStart).length;
-                const completed = tasks.filter(task => task.done).length;
+                const completed = tasks.filter(task => !task.deleted && task.done).length;
                 document.getElementById("todayStat").textContent = dueToday;
                 document.getElementById("upcomingStat").textContent = upcoming;
                 document.getElementById("doneStat").textContent = completed;
@@ -483,7 +612,32 @@
                         } else {
                             created.textContent = "Creation date unavailable";
                         }
-                        item.append(title, created);
+                        if (task.deleted) {
+                            const restore = document.createElement("button");
+                            restore.className = "restore-snooze";
+                            restore.type = "button";
+                            restore.textContent = "Restore";
+                            restore.setAttribute("aria-label", `Restore ${task.title}`);
+                            restore.addEventListener("click", async () => {
+                                const previousTasks = tasks.map(item => ({ ...item }));
+                                task.deleted = false;
+                                delete task.deletedAt;
+                                if (await commitTaskChanges(previousTasks)) showToast("Reminder restored.");
+                            });
+                            item.append(restore);
+                        }
+                        const remove = document.createElement("button");
+                        remove.className = "delete-button";
+                        remove.type = "button";
+                        remove.textContent = "×";
+                        remove.title = "Delete from history";
+                        remove.setAttribute("aria-label", `Delete ${task.title} from history`);
+                        remove.addEventListener("click", () => {
+                            pendingDeleteId = task.id;
+                            document.getElementById("deleteDialogMessage").textContent = "Permanently delete this task from history?";
+                            deleteDialog.showModal();
+                        });
+                        item.append(title, created, remove);
                         taskList.append(item);
                         return;
                     }
@@ -496,10 +650,16 @@
                     completionControl.type = "button";
                     completionControl.textContent = task.done ? "Mark unfinished" : "Mark as finished";
                     completionControl.setAttribute("aria-label", `Mark ${task.title} as ${task.done ? "unfinished" : "finished"}`);
-                    completionControl.addEventListener("click", () => {
-                        task.done = !task.done;
-                        saveTasks();
-                        render();
+                    completionControl.addEventListener("click", async () => {
+                        if (!task.done) {
+                            pendingFinishId = task.id;
+                            document.getElementById("finishDialogMessage").textContent = `Press OK to mark “${task.title}” as finished. The app will save the change in this browser and confirm when it succeeds.`;
+                            finishDialog.showModal();
+                            return;
+                        }
+                        const previousTasks = tasks.map(item => ({ ...item }));
+                        task.done = false;
+                        await commitTaskChanges(previousTasks);
                     });
                     const main = document.createElement("div");
                     main.className = "task-main";
@@ -525,6 +685,20 @@
                     due.textContent = dueLabel(task.dueAt);
                     const actions = document.createElement("div");
                     actions.className = "task-actions";
+                    const edit = document.createElement("button");
+                    edit.className = "edit-button";
+                    edit.type = "button";
+                    edit.textContent = "Edit";
+                    edit.setAttribute("aria-label", `Edit ${task.title}`);
+                    edit.addEventListener("click", () => {
+                        editingTaskId = task.id;
+                        editTitleInput.value = task.title;
+                        editDueInput.value = localDateTimeValue(new Date(task.dueAt));
+                        editCategoryInput.value = task.category || "Personal";
+                        editDialog.showModal();
+                        editTitleInput.focus();
+                    });
+                    actions.append(edit);
                     if (!task.done && activeFilter !== "history") {
                         const snooze = document.createElement("select");
                         snooze.className = "snooze-select";
@@ -543,16 +717,15 @@
                             option.selected = index === 0;
                             snooze.append(option);
                         });
-                        snooze.addEventListener("change", () => {
+                        snooze.addEventListener("change", async () => {
+                            const previousTasks = tasks.map(item => ({ ...item }));
                             if (!task.snoozedFromDueAt) task.snoozedFromDueAt = task.dueAt;
                             const snoozedUntil = new Date(Math.max(Date.now(), dueTime));
                             if (snooze.value === "tomorrow") snoozedUntil.setDate(snoozedUntil.getDate() + 1);
                             else snoozedUntil.setTime(snoozedUntil.getTime() + (snooze.value === "10m" ? 10 : 60) * 60 * 1000);
                             task.dueAt = snoozedUntil.toISOString();
                             task.notified = false;
-                            saveTasks();
-                            showToast(`Reminder snoozed until ${dueLabel(task.dueAt)}.`);
-                            render();
+                            if (await commitTaskChanges(previousTasks)) showToast(`Reminder snoozed until ${dueLabel(task.dueAt)}.`);
                         });
                         actions.append(snooze);
                     }
@@ -562,13 +735,12 @@
                         restore.type = "button";
                         restore.textContent = "Restore time";
                         restore.setAttribute("aria-label", `Restore original time for ${task.title}`);
-                        restore.addEventListener("click", () => {
+                        restore.addEventListener("click", async () => {
+                            const previousTasks = tasks.map(item => ({ ...item }));
                             task.dueAt = task.snoozedFromDueAt;
                             delete task.snoozedFromDueAt;
                             task.notified = new Date(task.dueAt).getTime() <= Date.now();
-                            saveTasks();
-                            showToast(`Original time restored: ${dueLabel(task.dueAt)}.`);
-                            render();
+                            if (await commitTaskChanges(previousTasks)) showToast(`Original time restored: ${dueLabel(task.dueAt)}.`);
                         });
                         actions.append(restore);
                     }
@@ -580,6 +752,7 @@
                     remove.setAttribute("aria-label", `Delete ${task.title}`);
                     remove.addEventListener("click", () => {
                         pendingDeleteId = task.id;
+                        document.getElementById("deleteDialogMessage").textContent = "Move this reminder to history?";
                         deleteDialog.showModal();
                     });
                     actions.append(remove);
@@ -588,10 +761,19 @@
                 });
             }
 
-            document.getElementById("confirmDelete").addEventListener("click", () => {
-                tasks = tasks.filter(task => task.id !== pendingDeleteId);
+            document.getElementById("confirmDelete").addEventListener("click", async () => {
+                const previousTasks = tasks.map(item => ({ ...item }));
+                if (activeFilter === "history") {
+                    tasks = tasks.filter(task => task.id !== pendingDeleteId);
+                } else {
+                    const task = tasks.find(item => item.id === pendingDeleteId);
+                    if (task) {
+                        task.deleted = true;
+                        task.deletedAt = new Date().toISOString();
+                    }
+                }
+                if (!await saveTasks(previousTasks)) return;
                 pendingDeleteId = null;
-                saveTasks();
                 deleteDialog.close();
                 render();
             });
@@ -601,11 +783,62 @@
                 deleteDialog.close();
             });
 
+            document.getElementById("confirmFinish").addEventListener("click", async () => {
+                const task = tasks.find(item => item.id === pendingFinishId);
+                if (!task) {
+                    finishDialog.close();
+                    return;
+                }
+                const previousTasks = tasks.map(item => ({ ...item }));
+                task.done = true;
+                if (!await commitTaskChanges(previousTasks)) return;
+                finishDialog.close();
+                showToast("Finished status saved in this browser.");
+            });
+            document.getElementById("cancelFinish").addEventListener("click", () => finishDialog.close());
+            finishDialog.addEventListener("close", () => {
+                pendingFinishId = null;
+            });
+
+            document.getElementById("cancelEdit").addEventListener("click", () => editDialog.close());
+            editDialog.addEventListener("close", () => {
+                editingTaskId = null;
+                editForm.reset();
+            });
+            editForm.addEventListener("submit", async event => {
+                event.preventDefault();
+                const title = editTitleInput.value.trim();
+                const dueAt = new Date(editDueInput.value);
+                const task = tasks.find(item => item.id === editingTaskId);
+                if (!task || !title || Number.isNaN(dueAt.getTime())) {
+                    showToast("Add a reminder title and choose a valid time.");
+                    return;
+                }
+
+                const previousTasks = tasks.map(item => ({ ...item }));
+                const nextDueAt = dueAt.toISOString();
+                if (task.dueAt !== nextDueAt) {
+                    task.dueAt = nextDueAt;
+                    task.notified = false;
+                    delete task.snoozedFromDueAt;
+                }
+                task.title = title;
+                task.category = editCategoryInput.value;
+                if (!await commitTaskChanges(previousTasks)) return;
+                editDialog.close();
+                showToast("Reminder updated.");
+            });
+
+            document.getElementById("aboutButton").addEventListener("click", () => aboutDialog.showModal());
+            document.getElementById("closeAbout").addEventListener("click", () => aboutDialog.close());
+            document.getElementById("guideButton").addEventListener("click", () => guideDialog.showModal());
+            document.getElementById("closeGuide").addEventListener("click", () => guideDialog.close());
+
             deleteDialog.addEventListener("close", () => {
                 pendingDeleteId = null;
             });
 
-            form.addEventListener("submit", event => {
+            form.addEventListener("submit", async event => {
                 event.preventDefault();
                 const title = titleInput.value.trim();
                 const dueAt = new Date(dueInput.value);
@@ -613,11 +846,11 @@
                     showToast("Add a task and choose a valid reminder time.");
                     return;
                 }
-                tasks.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, title, dueAt: dueAt.toISOString(), createdAt: new Date().toISOString(), category: categoryInput.value, done: false, notified: false });
-                saveTasks();
+                const previousTasks = tasks.map(task => ({ ...task }));
+                tasks.push({ id: createTaskId(), title, dueAt: dueAt.toISOString(), createdAt: new Date().toISOString(), category: categoryInput.value, done: false, notified: false });
+                if (!await commitTaskChanges(previousTasks)) return;
                 form.reset();
                 dueInput.value = localDateTimeValue(new Date());
-                render();
                 showToast("Reminder saved.");
                 titleInput.focus();
             });
@@ -663,11 +896,13 @@
                 showToast(permission === "granted" ? "You’ll get browser notifications while this page is open." : "Notifications weren’t enabled. In-page alerts will still appear.");
             });
 
-            function checkDueReminders() {
+            async function checkDueReminders() {
+                if (!storageReady) return;
                 const now = Date.now();
                 let changed = false;
+                const previousTasks = tasks.map(task => ({ ...task }));
                 tasks.forEach(task => {
-                    if (task.done || task.notified || new Date(task.dueAt).getTime() > now) return;
+                    if (task.deleted || task.done || task.notified || new Date(task.dueAt).getTime() > now) return;
                     task.notified = true;
                     changed = true;
                     showToast(`Reminder: ${task.title}`);
@@ -675,14 +910,15 @@
                         try { new Notification("reminder.prime", { body: task.title, tag: task.id }); } catch { /* In-page alert remains available. */ }
                     }
                 });
-                if (changed) saveTasks();
-                render();
+                if (changed) await commitTaskChanges(previousTasks);
+                else render();
             }
 
             setDates();
             setInterval(setDates, 1000);
+            tasks = loadTasks();
             dueInput.value = localDateTimeValue(new Date());
-           if ("Notification" in window && Notification.permission === "granted") document.getElementById("notificationLabel").textContent = "Notifications on";
+            if ("Notification" in window && Notification.permission === "granted") document.getElementById("notificationLabel").textContent = "Notifications on";
             syncPage();
             render();
             setInterval(checkDueReminders, 15000);
