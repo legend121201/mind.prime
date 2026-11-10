@@ -708,7 +708,19 @@
                             showToast("Saved task restored.");
                         }
                     });
-                    item.append(title, deleted, restore);
+                    const remove = document.createElement("button");
+                    remove.className = "delete-button";
+                    remove.type = "button";
+                    remove.textContent = "×";
+                    remove.title = "Delete saved task permanently";
+                    remove.setAttribute("aria-label", `Delete saved task ${task.title} permanently`);
+                    remove.addEventListener("click", () => {
+                        pendingDeleteId = task.id;
+                        pendingDeleteType = "permanent-saved-task";
+                        document.getElementById("deleteDialogMessage").textContent = `Permanently delete “${task.title}”? This cannot be undone.`;
+                        deleteDialog.showModal();
+                    });
+                    item.append(title, deleted, restore, remove);
                     deletedSavedTaskList.append(item);
                 });
             }
@@ -922,6 +934,24 @@
             }
 
             document.getElementById("confirmDelete").addEventListener("click", async () => {
+                if (pendingDeleteType === "permanent-saved-task") {
+                    const previousSavedTasks = savedTasks.map(item => ({ ...item }));
+                    const taskExists = savedTasks.some(item => item.id === pendingDeleteId && item.deletedAt);
+                    if (!taskExists) {
+                        pendingDeleteId = null;
+                        pendingDeleteType = null;
+                        deleteDialog.close();
+                        return;
+                    }
+                    savedTasks = savedTasks.filter(item => item.id !== pendingDeleteId);
+                    if (!await saveSavedTasks(previousSavedTasks)) return;
+                    pendingDeleteId = null;
+                    pendingDeleteType = null;
+                    deleteDialog.close();
+                    render();
+                    showToast("Saved task permanently deleted.");
+                    return;
+                }
                 if (pendingDeleteType === "saved-task") {
                     const previousSavedTasks = savedTasks.map(item => ({ ...item }));
                     const task = savedTasks.find(item => item.id === pendingDeleteId);
