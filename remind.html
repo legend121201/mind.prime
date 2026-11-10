@@ -117,6 +117,10 @@
         .list-page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 30px; padding: 22px 24px; border-left: 4px solid var(--blue); border-radius: 8px; background: var(--blue-soft); }
         .list-page-header h1 { font-size: 34px; }
         .list-page-header p { color: var(--muted); margin: 8px 0 0; font-size: 13px; }
+        .history-tabs { display: flex; gap: 7px; margin: -12px 0 24px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+        .history-tab { border: 1px solid transparent; border-radius: 6px; background: transparent; color: #68736d; padding: 8px 12px; font-size: 12px; font-weight: 650; }
+        .history-tab:hover { background: #f0f3ee; color: var(--ink); }
+        .history-tab.active { border-color: #c9ded0; background: var(--green-soft); color: var(--green-dark); }
         .search-control { width: min(100%, 340px); height: 42px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid var(--line); border-radius: 7px; background: white; color: #78817c; }
         .search-control span { font-size: 19px; line-height: 1; }
         .search-control input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 12px; }
@@ -324,6 +328,10 @@
                         <input id="reminderSearch" type="search" placeholder="Search reminders" autocomplete="off">
                     </label>
                 </section>
+                <nav class="history-tabs" id="historyTabs" aria-label="History sections" hidden>
+                    <button class="history-tab active" type="button" data-history-view="reminders" aria-current="page">Reminder history</button>
+                    <button class="history-tab" type="button" data-history-view="saved">Saved tasks</button>
+                </nav>
                 <section class="saved-task-section" id="savedTaskSection" aria-labelledby="savedTaskTitle" hidden>
                     <div class="section-heading">
                         <h2 id="savedTaskTitle">Saved tasks (no reminders)</h2>
@@ -422,6 +430,9 @@
             const titleInput = document.getElementById("taskTitle");
             const dueInput = document.getElementById("taskDue");
             const categoryInput = document.getElementById("taskCategory");
+            const historyTabs = document.getElementById("historyTabs");
+            const historyTabButtons = [...document.querySelectorAll(".history-tab")];
+            const reminderSearchControl = document.querySelector(".search-control");
             const savedTaskForm = document.getElementById("savedTaskForm");
             const savedTaskInput = document.getElementById("savedTaskInput");
             const savedTaskSection = document.getElementById("savedTaskSection");
@@ -445,7 +456,8 @@
             const editTitleInput = document.getElementById("editTitle");
             const editDueInput = document.getElementById("editDue");
             const editCategoryInput = document.getElementById("editCategory");
-            let activeFilter = location.hash === "#history" ? "today" : filterFromHash();
+            let activeFilter = filterFromHash();
+            let historyView = location.hash === "#history-saved" ? "saved" : "reminders";
             let searchQuery = "";
             let pendingDeleteId = null;
             let pendingDeleteType = null;
@@ -576,7 +588,7 @@
             function filterFromHash() {
                 if (location.hash === "#all-reminders") return "upcoming";
                 if (location.hash === "#completed") return "completed";
-                if (location.hash === "#history") return "history";
+                if (location.hash === "#history" || location.hash === "#history-saved") return "history";
                 return "today";
             }
 
@@ -596,7 +608,17 @@
                 document.getElementById("listPageDescription").textContent = activeFilter === "history" ? "See when each task was created." : activeFilter === "completed" ? "Your finished tasks, all in one place." : "Find a task by its name or subject.";
                 document.getElementById("listTitle").textContent = isToday ? "Today" : activeFilter === "history" ? "Task history" : activeFilter === "completed" ? "Completed reminders" : "Your reminders";
                 reminderSearch.placeholder = activeFilter === "history" ? "Search task history" : activeFilter === "completed" ? "Search completed reminders" : "Search reminders";
-                savedTaskSection.hidden = activeFilter !== "history";
+                const isSavedTasksView = activeFilter === "history" && historyView === "saved";
+                historyTabs.hidden = activeFilter !== "history";
+                historyTabButtons.forEach(button => {
+                    const selected = button.dataset.historyView === historyView;
+                    button.classList.toggle("active", selected);
+                    if (selected) button.setAttribute("aria-current", "page");
+                    else button.removeAttribute("aria-current");
+                });
+                reminderSearchControl.hidden = isSavedTasksView;
+                reminderSection.hidden = isSavedTasksView;
+                savedTaskSection.hidden = !isSavedTasksView;
             }
 
             function visibleTasks() {
@@ -1032,10 +1054,18 @@
 
             filterButtons.forEach(button => button.addEventListener("click", () => {
                 activeFilter = button.dataset.filter;
+                if (activeFilter === "history") historyView = "reminders";
                 const route = activeFilter === "upcoming" ? "#all-reminders" : activeFilter === "completed" ? "#completed" : activeFilter === "history" ? "#history" : "#today";
                 if (location.hash !== route) history.pushState(null, "", route);
                 syncPage();
                 render();
+            }));
+
+            historyTabButtons.forEach(button => button.addEventListener("click", () => {
+                historyView = button.dataset.historyView;
+                const route = historyView === "saved" ? "#history-saved" : "#history";
+                if (location.hash !== route) history.pushState(null, "", route);
+                syncPage();
             }));
 
             reminderSearch.addEventListener("input", () => {
@@ -1045,6 +1075,7 @@
 
             window.addEventListener("hashchange", () => {
                 activeFilter = filterFromHash();
+                historyView = location.hash === "#history-saved" ? "saved" : "reminders";
                 syncPage();
                 render();
             });

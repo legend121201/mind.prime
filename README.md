@@ -10,4 +10,4 @@ Reminders are saved in the current browser using local storage. No account or em
 
 You can edit a reminder's title, due time, and subject from its reminder card.
 
-The History view also lets you save tasks without a due date or reminder. Deleting one moves it to the separate deleted saved tasks list, where it can be restored. These tasks are stored separately from reminders and never trigger alerts.
+History has separate Reminder history and Saved tasks sections. Save tasks without a due date or reminder in Saved tasks; deleting one moves it to that section’s deleted-task list, where it can be restored. Saved tasks are stored separately from reminders and never trigger alerts.
